@@ -70,7 +70,7 @@ subst p v (FieldAccess e f) = case (subst p v e) of
 subst p v (MethodInvk e n ap) = 
   let ap' = Data.List.map (\x -> case (subst p v x) of Just x' -> x') ap in
     case (subst p v e) of 
-      Just e' -> Just (MethodInvk e' n ap)
+      Just e' -> Just (MethodInvk e' n ap')
 subst p v (CreateObject c ap) = 
   let ap' = Data.List.map (\x -> case (subst p v x) of Just x' -> x') ap in
     Just (CreateObject c ap')
