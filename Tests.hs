@@ -5,6 +5,7 @@
 module Tests where
 import FJParser
 import FJUtils
+import FJInterpreter
 import FJTypeChecker
 import CT
 import Test.QuickCheck
@@ -156,7 +157,7 @@ genExpr size ct ctx t
       oneof ([do el <- Control.Monad.mapM (genExpr (size `div` 2) ct ctx) ft
                  return (CreateObject t el)] ++ 
               maybeToList (pickVar ctx (TypeClass t)) ++ 
-              fc ++ mc ++ ucc ++ dcc ++ scc)
+              fc ++ mc ++ ucc ++ dcc)
   | otherwise = do el <- Control.Monad.mapM (genExpr (size `div` 2) ct ctx) ft
                    oneof ([return (CreateObject t el)] ++ 
                        maybeToList (pickVar ctx (TypeClass t)))
@@ -207,13 +208,28 @@ instance Arbitrary Expr where
                  sized (\n -> genExpr n classtable Data.Map.empty t)
 
 -- Function: prop_genwelltyped
--- Objective: Test if a generated expression is well-typed.
+-- Objective: Test if the generated expressions are well-typed.
 -- Params: None.
--- Returns: True if the expression is well-typed, False otherwise.
-------------------------------------------------------------------
+-- Returns: True if the expressions are well-typed, False otherwise.
+--------------------------------------------------------------------
 prop_genwelltyped = forAll genType $ 
                       \t -> forAll (genExpression t) $ 
                       \e -> either (const False)
                                    (\(TypeClass t') -> t == t')
                                    (typeof Data.Map.empty classtable e)
 
+-- Function: prop_preservation
+-- Objective: Tests for the property of preservation.
+-- Params: None.
+-- Returns: True if the property held for the test cases, False otherwise.
+--------------------------------------------------------------------------
+prop_preservation = 
+  forAll genType $ 
+    \t -> forAll (genExpression t) $
+    \e -> either (const False)
+                 (\(TypeClass t') -> t == t')
+                 (case (eval' classtable e) of 
+                    Just e' -> typeof Data.Map.empty classtable e'
+                    _ -> throwError (UnknownError e)
+                 )
+                    
