@@ -163,22 +163,27 @@ genExpr size ct ctx t
                        maybeToList (pickVar ctx (TypeClass t)))
     where ft = case (fields t classtable) of
                  Just lst -> Data.List.map (\((TypeClass t'),n') -> t') lst
-                 _ -> [] 
+                 _ -> []
+          -- FieldAccess candidates 
           fc = if (Data.List.length (cfields size ctx ct t) > 0) then
                  [oneof (cfields (size - 1) ctx ct t)]
                else []
+          -- MethodInvk candidates
           mc = if (Data.List.length (cmethods size ctx ct t) > 0) then
                  [oneof (cmethods (size - 1) ctx ct t)]
                else 
                  []
+          -- Upcast candidates
           ucc = if (Data.List.length (cucast size ctx ct t) > 0) then
                   [oneof (cucast (size - 1) ctx ct t)]
                 else 
                   []
+          -- Downcast candidates
           dcc = if (Data.List.length (cdcast size ctx ct t) > 0) then
                   [oneof (cdcast (size - 1) ctx ct t)]
                 else 
                   []
+          -- Stupid cast candidates (not used for testing properties)
           scc = if (Data.List.length (cscast size ctx ct t) > 0) then
                   [oneof (cscast (size - 1) ctx ct t)]
                 else
@@ -232,4 +237,14 @@ prop_preservation =
                     Just e' -> typeof Data.Map.empty classtable e'
                     _ -> throwError (UnknownError e)
                  )
-                    
+
+-- Function: prop_progress
+-- Objective: Tests for the property of progress.
+-- None.
+-- Returns: True if the property held for the test casts, False otherwise.
+-------------------------------------------------------------------------- 
+prop_progress =
+ forAll genType $
+   \t -> forAll (genExpression t) $
+   \e -> isValue classtable e || maybe (False) (const True) (eval' classtable e)
+
