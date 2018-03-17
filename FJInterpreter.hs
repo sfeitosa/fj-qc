@@ -49,11 +49,24 @@ eval' ct (Cast c e) =
                                Just (CreateObject c' p)
                              else
                                Nothing
+      _ -> Nothing
   else -- RC-Cast
     case (eval' ct e) of
       Just e' -> Just (Cast c e')
       _ -> Nothing  
 eval' _ _ = Nothing
+
+
+-- Function: eval
+-- Objective: Evaluate an expression recursively.
+-- Params: Class table, Expression.
+-- Returns: A value after all the reduction steps.
+--------------------------------------------------
+eval :: CT -> Expr -> Expr
+eval ct e = if (isValue ct e) then
+              e
+            else
+              maybe e (eval ct) (eval' ct e)
 
 
 -- Function: subst
