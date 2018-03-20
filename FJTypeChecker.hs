@@ -112,14 +112,14 @@ methodTyping ctx ct (Class c b _ _ _) (Method (TypeClass r) m p e) =
 -- Returns: True for a well formed class, False otherwise.
 ----------------------------------------------------------
 classTyping :: Class -> Env -> CT -> Bool
-classTyping (Class c b attrs (Constr cn pc s ths) meths) ctx ct = 
+classTyping cl@(Class c b attrs (Constr cn pc s ths) meths) ctx ct = 
   case (fields b ct) of 
     Just flds -> 
       if (pc == (flds ++ attrs)) then
         if (Data.List.all (\(n',n'') -> n' == n'') ths) then
           let p' = Data.List.map (\(tp, nm) -> nm) pc 
               p'' = s ++ (Data.List.map (\(n',n'') -> n') ths) 
-            in p' == p''
+            in (p' == p'') && (Data.List.all (methodTyping ctx ct cl) meths)
         else 
           False
       else 
