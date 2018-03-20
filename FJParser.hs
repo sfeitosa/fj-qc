@@ -7,12 +7,15 @@ import Data.Map
 
 -- Featherweight Java syntactic constructors
 --------------------------------------------
+-- class C extends C { C_ f_; K M_ }
 data Class = Class String String [(Type,String)] Constr [Method]
            deriving (Show, Eq)
 
+-- C(C_ f_) { super(f_); this.f_.f_; }
 data Constr = Constr String [(Type,String)] [String] [(String,String)]
             deriving (Show, Eq)
 
+-- C m(C_ x_) { return e; }
 data Method = Method Type String [(Type,String)] Expr
             deriving (Show, Eq)
 
