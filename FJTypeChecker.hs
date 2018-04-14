@@ -8,24 +8,6 @@ import FJUtils
 import Data.Map
 import Data.List
 
-data TypeError = VariableNotFound String
-               | FieldNotFound String
-               | ClassNotFound String
-               | MethodNotFound String String
-               | WrongCast String Expr
-               | ParamsTypeMismatch [(Expr,Type)]
-               | UnknownError Expr
-               deriving (Show,Eq)
-
-
--- Function: throwError
--- Objective: Launching a type error.
--- Params: Expected type, Found type, Expression presenting the error.
--- Returns: A type error structure.
-----------------------------------------------------------------------
-throwError :: TypeError -> Either TypeError Type
-throwError e = Left e
-
 -- Function: typeof
 -- Objective: Check the type of a given expression.
 -- Params: Type context, Class table, Expression.
@@ -33,9 +15,9 @@ throwError e = Left e
 -----------------------------------------------------
 typeof :: Env -> CT -> Expr -> Either TypeError Type
 typeof ctx ct (Var v) = -- T-Var
-  case (Data.Map.lookup v ctx) of 
-    Just t -> return t
-    _ -> throwError (VariableNotFound v) 
+  maybe (throwError (VariableNotFound v))
+        (\t -> return t)
+        (Data.Map.lookup v ctx)
 typeof ctx ct (FieldAccess e f) = -- T-Field
   case (typeof ctx ct e) of
     Right (TypeClass c) ->

@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 -- QuickCheck property-based testing for Featherweight Java
 -- Author: Samuel da Silva Feitosa
 -- Date: 03/2018
@@ -94,7 +95,7 @@ genMethod ct c b =
             ) r
      return (Method 
                (TypeClass r) 
-               ('m':m)  
+               ('m':m ++ c)  
                (zip (Data.List.map (\t -> TypeClass t) tl) (nub vl))
                e
             )
@@ -137,12 +138,17 @@ formatConstr ct c b attrs =
 genClass :: CT -> String -> String -> Gen Class
 genClass ct c b = 
   do attrs <- genAttrs ct c b
-     meths <- genMethods ct c b
+     meths <- genMethods (Data.Map.insert c (cl attrs []) ct) c b
      return (Class c b 
               (Data.List.map (\(k,p) -> (TypeClass k,p)) attrs) -- Attributes
               (formatConstr ct c b -- Constructor
                 (Data.List.map (\(k,p) -> (TypeClass k,p)) attrs)) -- Params
               meths) -- Methods
+  where cl at mt = (Class c b -- Class, base class
+                     (Data.List.map (\(k,p) -> (TypeClass k, p)) at) -- Attrs
+                     (formatConstr ct c b -- Constructor
+                       (Data.List.map (\(k,p) -> (TypeClass k, p)) at)) 
+                     mt) -- Methods
 
 -- Function: addClass
 -- Objective: Generate a class with the given name and adds to the class table.
@@ -172,7 +178,7 @@ genClassTable = do n <- choose (1,10)
 -- Returns: A FieldAccess expression.
 -------------------------------------------------------------------
 genFieldAccess :: Int -> Env -> CT -> String -> String -> Gen Expr
-genFieldAccess size ctx ct t f = do e <- genExpr (size - 1) ct ctx t
+genFieldAccess size ctx ct t f = do e <- genExpr (size `div` 2) ct ctx t
                                     return (FieldAccess e f)
 
 -- Function: genMethodInvk
@@ -182,8 +188,8 @@ genFieldAccess size ctx ct t f = do e <- genExpr (size - 1) ct ctx t
 ------------------------------------------------------------------------------
 genMethodInvk :: Int -> Env -> CT -> String -> String -> [String] -> Gen Expr
 genMethodInvk size ctx ct t m pt = 
-  do e <- genExpr (size - 1) ct ctx t
-     el <- Control.Monad.mapM (genExpr (size `div` 2) ct ctx) pt
+  do e <- genExpr (size `div` 2) ct ctx t
+     el <- Control.Monad.mapM (genExpr (size `div` 3) ct ctx) pt
      return (MethodInvk e m el) 
 
 -- Function: genCast
@@ -192,7 +198,7 @@ genMethodInvk size ctx ct t m pt =
 -- Returns: A Cast expression.
 --------------------------------------------------------------
 genCast :: Int -> Env -> CT -> String -> String -> Gen Expr
-genCast size ctx ct t tc = do e <- genExpr (size - 1) ct ctx tc
+genCast size ctx ct t tc = do e <- genExpr (size `div` 2) ct ctx tc
                               return (Cast t e)
 
 -- Function: cfields
@@ -333,7 +339,7 @@ genExpression ct ctx t = sized (\n -> genExpr n ct ctx t)
 instance Arbitrary Expr where
   arbitrary = do ct <- genClassTable
                  t <- elements ("Object" : keys ct)
-                 sized (\n -> genExpr n ct Data.Map.empty t)
+                 sized (\n -> genExpr (n `div` 2) ct Data.Map.empty t)
 
 -- Function: prop_genwelltypedct
 -- Objective: Test if the generated class table is well-formed.
@@ -400,3 +406,9 @@ prop_preservation =
                     _ -> throwError (UnknownError e)
                  )
 
+-- Function: main
+-- Objective: Run all properties using QuickCheck.
+--------------------------------------------------
+return [] -- This is necessary for using 'forAllProperties' function
+main = $forAllProperties $
+          quickCheckWithResult (stdArgs { maxSuccess = 1000 })

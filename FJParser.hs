@@ -36,3 +36,23 @@ data Type = TypeClass String
 type Env = Map String Type
 type CT = Map String Class
 
+-- Auxiliary definitions to Type-Checking
+-----------------------------------------
+data TypeError = VariableNotFound String
+               | FieldNotFound String
+               | ClassNotFound String
+               | MethodNotFound String String
+               | WrongCast String Expr
+               | ParamsTypeMismatch [(Expr,Type)]
+               | UnknownError Expr
+               deriving (Show,Eq)
+    
+    
+-- Function: throwError
+-- Objective: Launching a type error.
+-- Params: Expected type, Found type, Expression presenting the error.
+-- Returns: A type error structure.
+----------------------------------------------------------------------
+throwError :: TypeError -> Either TypeError Type 
+throwError e = Left e
+
