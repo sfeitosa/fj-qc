@@ -23,8 +23,10 @@ eval' ct (FieldAccess e f) =
       (CreateObject c p) ->
         case (fields c ct) of
           Just flds -> 
-            case (Data.List.findIndex (\(tp,nm) -> f == nm) flds) of
-              Just idx -> Just (p !! idx)
+            maybe (Nothing)
+                  (\idx -> Just (p !! idx))
+                  (Data.List.findIndex (\(tp,nm) -> f == nm) flds)
+          _ -> Nothing
   else -- RC-Field
     maybe (Nothing)
           (\e' -> Just (FieldAccess e' f))
